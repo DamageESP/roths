@@ -1,0 +1,22 @@
+doctype html
+html(lang="en")
+	head
+		title="game"
+		meta(charset="UTF-8")
+		script(type="text/javascript", src="/socket.io/socket.io.js").
+		script(type="text/javascript", src="https://code.jquery.com/jquery-3.1.1.js").
+		script(type="text/javascript", src="libraries/p5.js").
+		script(type="text/javascript", src="libraries/p5.dom.js").
+		script(type="text/javascript", src="libraries/p5.sound.js").
+		script(type="text/javascript", src="libraries/socket.io.js").
+		script(type="text/javascript", src="player.js").
+		script(type="text/javascript", src="bullet.js").
+		script(type="text/javascript", src="game.js").
+		link(rel="stylesheet", href="style/game.css").
+	body
+		div(id="login")
+			input(type="text", id="username")
+		div(id="events")
+			
+		div(id="chat")
+			input(type="text", id="send", placeholder="escribir un mensaje en el chat...", autofocus)

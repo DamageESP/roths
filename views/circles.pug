@@ -1,0 +1,30 @@
+doctype html
+html(lang="en")
+	head
+		title="circles"
+		meta(charset="UTF-8")/
+		script(type="text/javascript", src="libraries/p5.js").
+		script(type="text/javascript", src="libraries/p5.dom.js").
+		script(type="text/javascript", src="libraries/p5.sound.js").
+		
+		style="body {padding: 0; margin: 0;}"
+	body
+		nav
+			a(href="/") idk what im doing |
+			a(href="/flares") flares |
+			a(href="/circles") circles |
+
+		div(style="position: absolute;left:520px;")
+			h2 Score:
+				span(id="score")
+			h2 Highest score:
+				span(id="maxScore")
+			h2 Total deaths:
+				span(id="deaths")
+			#controls
+				label(for="randomness") randomness 	
+				input(type="number", id="randomness", value="5")
+				br
+				label(for="ellipseSize") ellipseSize 	
+				input(type="number", id="ellipseSize", value="80")
+		script(type="text/javascript", src="circles.js")
