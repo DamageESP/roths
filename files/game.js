@@ -38,7 +38,8 @@ function setup() {
 					g: g,
 					b: b
 				};
-				var newPlayer = new Player(socket.id, username, colour, pos);
+				var health = 100
+				var newPlayer = new Player(socket.id, username, colour, pos, health)
 				socket.emit('add user', {
 					id: newPlayer.id,
 					username: newPlayer.username,
@@ -46,7 +47,8 @@ function setup() {
 					pos: {
 						x: newPlayer.pos.x,
 						y: newPlayer.pos.y
-					}
+					},
+					health: newPlayer.health
 				});
 				return false;
 			}
@@ -112,18 +114,6 @@ function draw() {
 		} else {
 			bullets[i].fly();
 			bullets[i].display();
-			//console.log('lookin for player in pos '+ bullets[i].pos.x, bullets[i].pos.y)
-		var hitPlayers = players
-			.filter(player => {
-				return (Math.abs(Math.floor(player.pos.x) - Math.floor(bullets[i].pos.x)) < birdSize.x / 2 && Math.abs(Math.floor(player.pos.y) - Math.floor(bullets[i].pos.y)) < birdSize.y / 2 && player.username != bullets[i].user)
-			});
-		//console.log(hitPlayers)
-		if (hitPlayers.length > 0) {
-			console.log('HIT!')
-			for (j = 0; j < hitPlayers.length; j++) {
-				players.splice(j, 1)
-			}
-		}
 		}
 	}
 }
@@ -174,12 +164,12 @@ socket.on('fetch data', function(data) {
 	players = [];
 	bullets = [];
 	for(var i = 0; i < data.players.length; i++) {
-		var pushPlayer = new Player(data.players[i].id, data.players[i].username, data.players[i].colour, data.players[i].pos);
+		var pushPlayer = new Player(data.players[i].id, data.players[i].username, data.players[i].colour, data.players[i].pos, data.players[i].health);
 		players.push(pushPlayer);
 	}
 	if(data.bullets) {
 		for(var i = 0; i < data.bullets.length; i++) {
-			var pushBullet = new Bullet(data.bullets[i].user, data.bullets[i].pos, data.bullets[i].heading);
+			var pushBullet = new Bullet(data.bullets[i].userID, data.bullets[i].pos, data.bullets[i].heading);
 			bullets.push(pushBullet);
 		}
 	}
@@ -221,7 +211,7 @@ socket.on('player update', function(player) {
 });*/
 
 socket.on('add user', function(user) {
-	var pushPlayer = new Player(user.id, user.username, user.colour, user.pos);
+	var pushPlayer = new Player(user.id, user.username, user.colour, user.pos, user.health);
 	players.push(pushPlayer);
 	if(lookupId(socket.id)) {
 		thisPlayer = lookupId(socket.id);
@@ -232,9 +222,36 @@ socket.on('add user', function(user) {
 });
 
 socket.on('add bullet', function(bullet) {
-	var pushBullet = new Bullet(bullet.user, bullet.pos, bullet.heading);
-	bullets.push(pushBullet);
+	if (lookupId(bullet.userID)) {
+		var pushBullet = new Bullet(bullet.userID, bullet.pos, bullet.heading);
+		bullets.push(pushBullet);
+	} else {
+		console.log('user not found when trying to shoot')
+	}
 });
+
+socket.on('player hit', function(shooting) {
+	var playerHit = lookupId(shooting.hit.id)
+	if (playerHit) {
+		playerHit.health = shooting.hit.health
+		console.log('player '+playerHit.username+' now has health '+playerHit.health)
+	} else {
+		console.log('player hit not found')
+	}
+})
+
+socket.on('player killed', function(shooting) {
+	var playerHit = lookupId(shooting.hit)
+	var shooter = lookupId(shooting.shooter)
+	if (playerHit) {
+		console.log('player '+playerHit.username+' was killed by '+shooter.username)
+		var i = players.indexOf(playerHit);
+		players.splice(i, 1);
+
+	} else {
+		console.log('player hit not found')
+	}
+})
 
 socket.on('disconnected', function(id) {
 	var deleteThis = lookupId(id);

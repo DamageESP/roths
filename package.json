@@ -4,7 +4,8 @@
   "description": "first time node LUL",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "start": "nodemon app.js"
   },
   "keywords": [
     "roths"

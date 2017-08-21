@@ -12,18 +12,25 @@ http.listen(3000, function() {
 //SOCKET.IO
 var players = [];
 var bullets = [];
-
-function Bullet(user, pos, heading) {
-	this.user = user;
-	this.pos = pos;
-	this.heading = heading;
+var playArea = {
+	x: 2000,
+	y: 2000
 }
 
-function Player(id, username, colour, pos) {
-	this.id = id;
-	this.username = username;
-	this.colour = colour;
+function Bullet(userID, pos, heading, decay) {
+	this.userID = userID;
 	this.pos = pos;
+	this.heading = heading;
+	this.decay = decay
+	this.strength = 40
+}
+
+function Player(data) {
+	this.id = data.id;
+	this.username = data.username;
+	this.colour = data.colour;
+	this.pos = data.pos;
+	this.health = data.health
 }
 
 function lookup(username) {
@@ -48,24 +55,84 @@ function lookupId(id) {
 	else return false;
 }
 
-/*function lookupBullet(id, x, y) {
+function lookupBullet(id, x, y) {
 	var lookup = {};
 	for (var i = 0, len = bullets.length; i < len; i++) {
-		lookup[bullets[i].id] = bullets[i];
+		lookup[bullets[i].userID] = bullets[i];
 	}
 	if(lookup[id]) {
-		for (var i = 0, len = bullets.length; i < len; i++) {
-			lookup[bullets[i].pos.x] = bullets[i];
+		var lookup2 = {};
+		for (var i = 0, len = lookup.length; i < len; i++) {
+			lookup2[lookup[i].pos.x] = lookup[i];
 		}
-		if(lookup[x]) {
-			for (var i = 0, len = bullets.length; i < len; i++) {
-				lookup[bullets[i].pos.y] = bullets[i];
+		if(lookup2[x]) {
+			var lookup3 = {};
+			for (var i = 0, len = lookup2.length; i < len; i++) {
+				lookup3[lookup2[i].pos.y] = lookup2[i];
 			}
-			return lookup
+			return lookup3[y]
 		}
 	}
 	else return false;
-}*/
+}
+
+function flyBullets() {
+	if (bullets.length > 0) {
+		for (var i = 0; i < bullets.length; i++) {
+			if(bullets[i].pos.x > playArea.x || bullets[i].pos.x < 0 || bullets[i].pos.y < 0 || bullets[i].pos.y > playArea.y) {
+				console.log('bullet out')
+				bullets.splice(i, 1)
+			} else {
+				
+				bullets[i].decay += .003
+				bullets[i].heading.y += bullets[i].decay
+				bullets[i].pos.x += bullets[i].heading.x
+				bullets[i].pos.y += bullets[i].heading.y
+				console.log('bullet y pos is '+bullets[i].pos.y)
+				if (checkBulletHit(bullets[i])) {
+					bullets.splice(i, 1)
+				}
+				//console.log('bullet has been displaced to x:'+bullets[i].pos.x+', y:'+bullets[i].pos.y)
+			}
+		}
+	}
+}
+
+function checkBulletHit(bullet) {
+	for (var i = 0; i < players.length; i++) {
+			/*
+			if (Math.abs(Math.floor(players[i].pos.x) - Math.floor(bullets[j].pos.x)) < 20 && Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y)) < 14) {
+				console.log('player '+players[i].id+' has been hit by '+bullets[j].userID+' ('+Math.abs(Math.floor(players[i].pos.x) - Math.floor(bullets[j].pos.x))+' < 20 and '+Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y))+' < 14)')
+			}
+			//console.log(Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y)))*/
+			if (Math.abs(Math.floor(players[i].pos.x) - Math.floor(bullet.pos.x)) < 20 
+			&& Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullet.pos.y)) < 14 
+			&& players[i].id != bullet.userID) {
+				players[i].health -= bullet.strength
+				if (players[i].health <= 0) {
+					console.log('player '+bullet.userID+' hit AND KILLED player '+players[i].id+'!')
+					io.emit('player killed', {
+						hit: players[i].id,
+						shooter: bullet.userID})
+					players.splice(i, 1)
+					return true
+				} else {
+					console.log('player '+bullet.userID+' hit player '+players[i].id+' and now has '+players[i].health+' health!')
+					io.emit('player hit', {
+						hit: {
+							id: players[i].id,
+							health: players[i].health
+						},
+						shooter: bullet.userID})
+					return true
+				}
+			}
+
+	}
+}
+
+setInterval(flyBullets, 16)
+
 
 // user connect
 
@@ -106,7 +173,7 @@ io.on('connection', function(client){
 				io.to(client.id).emit('user message', ' user '+ user.username +' already exists');
 					console.log(' '+user.username+" already exists");
 			} else {
-				var newPlayer = new Player(user.id, user.username, user.colour, user.pos);
+				var newPlayer = new Player(user);
 				players.push(newPlayer);
 				console.log(user.username+' joined (id: '+client.id+')');
 				client.broadcast.emit('status message', user.username +' has joined!'); // announce user joining
@@ -121,9 +188,11 @@ io.on('connection', function(client){
 	// add bullet
 
 	client.on('add bullet', function(bullet) {
-		var newBullet = new Bullet(bullet.user, bullet.pos, bullet.heading);
-		bullets.push(newBullet);
-		io.emit('add bullet', newBullet);
+		if (lookupId(bullet.userID)) {
+			var newBullet = new Bullet(bullet.userID, bullet.pos, bullet.heading, bullet.decay);
+			bullets.push(newBullet);
+			io.emit('add bullet', newBullet);
+		}
 	});
 
 
@@ -153,14 +222,15 @@ io.on('connection', function(client){
 	}
   });
 
- /* // update bullets coordinates
+ // update bullets coordinates
   client.on('bullet update', function(data) {
 	if(lookupBullet(data.id, data.pos.x, data.pos.y)) {
 		var updateThis = lookupBullet(data.id, data.pos.x, data.pos.y);
 		updateThis.pos = data.pos;
 		io.emit('bullet update', updateThis);
 	}
-  });*/
+  });
+
 });
 
 

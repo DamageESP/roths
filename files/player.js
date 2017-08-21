@@ -5,12 +5,13 @@ var birdSize = {
 	y: 28
 }
 
-function Player(id, username, colour, pos) {
-	this.id = id;
-	this.username = username;
-	this.colour = colour; // contains r, g, b
-	this.pos = createVector(pos.x, pos.y);
-	this.speed = createVector(0, 0);
+function Player(id, username, colour, pos, health) {
+	this.id = id
+	this.username = username
+	this.colour = colour // contains r, g, b
+	this.pos = createVector(pos.x, pos.y)
+	this.speed = createVector(0, 0)
+	this.health = health
 	this.display = function() {
 		var clr = color(this.colour.r, this.colour.g, this.colour.b);
 		fill(clr);
@@ -24,7 +25,7 @@ function Player(id, username, colour, pos) {
 		image(bird, - birdSize.x/2, - birdSize.y/2, birdSize.x, birdSize.y);
 		pop();
 		textAlign(CENTER);
-		text(this.username, this.pos.x, this.pos.y - birdSize.y/1.5);
+		text(this.username+' ('+this.health+')', this.pos.x, this.pos.y - birdSize.y/1.5);
 		fill(0);
 	}
 	this.say = function(msg) {
@@ -74,13 +75,14 @@ function Player(id, username, colour, pos) {
 		var thisPos = createVector(this.pos.x + (birdSize.x / 2), this.pos.y);
 		var mousePos = createVector(mouseX, mouseY);
 		var heading = mousePos.sub(thisPos).heading();	
-		var newBullet = new Bullet(this.username, this.pos, p5.Vector.fromAngle(heading));
+		var newBullet = new Bullet(this.id, this.pos, p5.Vector.fromAngle(heading));
 		socket.emit('add bullet', {
-			user: newBullet.user,
+			userID: newBullet.userID,
 			pos: {
 				x: newBullet.pos.x,
 				y: newBullet.pos.y
 			},
+			decay: 0,
 			heading: {
 				x: newBullet.heading.x,
 				y: newBullet.heading.y
@@ -95,7 +97,8 @@ function Player(id, username, colour, pos) {
 			pos: {
 				x: this.pos.x,
 				y: this.pos.y
-			}
+			},
+			health: this.health
 		});
 	}
 }
