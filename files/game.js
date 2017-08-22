@@ -112,7 +112,6 @@ function draw() {
 		if(bullets[i].out) {
 			bullets.splice(i, 1);
 		} else {
-			bullets[i].fly();
 			bullets[i].display();
 		}
 	}
@@ -149,6 +148,17 @@ function lookupId(id) {
 	else return false;
 }
 
+function lookupBullet(id) {
+	var lookup = {};
+	for (var i = 0, len = bullets.length; i < len; i++) {
+		lookup[bullets[i].id] = bullets[i];
+	}
+	if(lookup[id]) {
+		return lookup[id];
+	}
+	else return false;
+}
+
 // scroll down on event
 
 function add() {
@@ -169,7 +179,7 @@ socket.on('fetch data', function(data) {
 	}
 	if(data.bullets) {
 		for(var i = 0; i < data.bullets.length; i++) {
-			var pushBullet = new Bullet(data.bullets[i].userID, data.bullets[i].pos, data.bullets[i].heading);
+			var pushBullet = new Bullet(data.bullets[i]);
 			bullets.push(pushBullet);
 		}
 	}
@@ -205,10 +215,14 @@ socket.on('player update', function(player) {
 	}
 });
 
-/*socket.on('bullet update', function(bullet) {
-	var updateThis = lookupBullet(bullet.id, bullet.pos.x, bullet.pos.y);
-	updateThis.pos = bullet.pos;
-});*/
+socket.on('bullet update', function(bullet) {
+	//console.log('found bullet with id '+bullet.id+' to pos x:'+bullet.pos.x+', y:'+bullet.pos.y)
+	if(lookupBullet(bullet.id)) {
+		//console.log('found bullet with id '+bullet.id)
+		var updateThis = lookupBullet(bullet.id);
+		updateThis.pos = bullet.pos;
+	}
+});
 
 socket.on('add user', function(user) {
 	var pushPlayer = new Player(user.id, user.username, user.colour, user.pos, user.health);
@@ -223,8 +237,9 @@ socket.on('add user', function(user) {
 
 socket.on('add bullet', function(bullet) {
 	if (lookupId(bullet.userID)) {
-		var pushBullet = new Bullet(bullet.userID, bullet.pos, bullet.heading);
+		var pushBullet = new Bullet(bullet);
 		bullets.push(pushBullet);
+		//console.log('added bullet with id '+bullet.id+' and pos x:'+bullet.pos.x+', y:'+bullet.pos.y)
 	} else {
 		console.log('user not found when trying to shoot')
 	}
@@ -234,6 +249,9 @@ socket.on('player hit', function(shooting) {
 	var playerHit = lookupId(shooting.hit.id)
 	if (playerHit) {
 		playerHit.health = shooting.hit.health
+		var bullet = lookupBullet(shooting.bullet)
+		var i = bullets.indexOf(bullet)
+		bullets.splice(i, 1)
 		console.log('player '+playerHit.username+' now has health '+playerHit.health)
 	} else {
 		console.log('player hit not found')
@@ -247,7 +265,12 @@ socket.on('player killed', function(shooting) {
 		console.log('player '+playerHit.username+' was killed by '+shooter.username)
 		var i = players.indexOf(playerHit);
 		players.splice(i, 1);
-
+		var bullet = lookupBullet(shooting.bullet)
+		var i = bullets.indexOf(bullet)
+		bullets.splice(i, 1)
+		if (playerHit.id == socket.id) {
+			document.body.innerHTML = "u ded"
+		}
 	} else {
 		console.log('player hit not found')
 	}

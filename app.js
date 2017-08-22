@@ -17,19 +17,20 @@ var playArea = {
 	y: 2000
 }
 
-function Bullet(userID, pos, heading, decay) {
-	this.userID = userID;
-	this.pos = pos;
-	this.heading = heading;
-	this.decay = decay
-	this.strength = 40
+function Bullet(data) {
+	this.userID = data.userID
+	this.id = data.id
+	this.pos = data.pos
+	this.heading = data.heading
+	this.decay = data.decay
+	this.strength = data.strength
 }
 
 function Player(data) {
-	this.id = data.id;
-	this.username = data.username;
-	this.colour = data.colour;
-	this.pos = data.pos;
+	this.id = data.id
+	this.username = data.username
+	this.colour = data.colour
+	this.pos = data.pos
 	this.health = data.health
 }
 
@@ -55,23 +56,13 @@ function lookupId(id) {
 	else return false;
 }
 
-function lookupBullet(id, x, y) {
+function lookupBullet(id) {
 	var lookup = {};
 	for (var i = 0, len = bullets.length; i < len; i++) {
-		lookup[bullets[i].userID] = bullets[i];
+		lookup[bullets[i].id] = bullets[i];
 	}
 	if(lookup[id]) {
-		var lookup2 = {};
-		for (var i = 0, len = lookup.length; i < len; i++) {
-			lookup2[lookup[i].pos.x] = lookup[i];
-		}
-		if(lookup2[x]) {
-			var lookup3 = {};
-			for (var i = 0, len = lookup2.length; i < len; i++) {
-				lookup3[lookup2[i].pos.y] = lookup2[i];
-			}
-			return lookup3[y]
-		}
+		return lookup[id];
 	}
 	else return false;
 }
@@ -81,6 +72,7 @@ function flyBullets() {
 		for (var i = 0; i < bullets.length; i++) {
 			if(bullets[i].pos.x > playArea.x || bullets[i].pos.x < 0 || bullets[i].pos.y < 0 || bullets[i].pos.y > playArea.y) {
 				console.log('bullet out')
+				io.emit('bullet update', bullets[i])
 				bullets.splice(i, 1)
 			} else {
 				
@@ -89,6 +81,7 @@ function flyBullets() {
 				bullets[i].pos.x += bullets[i].heading.x
 				bullets[i].pos.y += bullets[i].heading.y
 				console.log('bullet y pos is '+bullets[i].pos.y)
+				io.emit('bullet update', bullets[i])
 				if (checkBulletHit(bullets[i])) {
 					bullets.splice(i, 1)
 				}
@@ -105,15 +98,17 @@ function checkBulletHit(bullet) {
 				console.log('player '+players[i].id+' has been hit by '+bullets[j].userID+' ('+Math.abs(Math.floor(players[i].pos.x) - Math.floor(bullets[j].pos.x))+' < 20 and '+Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y))+' < 14)')
 			}
 			//console.log(Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y)))*/
-			if (Math.abs(Math.floor(players[i].pos.x) - Math.floor(bullet.pos.x)) < 20 
-			&& Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullet.pos.y)) < 14 
+			if ((Math.abs(players[i].pos.x - bullet.pos.x) < 20 || Math.abs(players[i].pos.x - bullet.pos.x - bullet.heading.x) < 20)
+			&& (Math.abs(players[i].pos.y - bullet.pos.y) < 14  || Math.abs(players[i].pos.y - bullet.pos.y - bullet.heading.y) < 14)
 			&& players[i].id != bullet.userID) {
 				players[i].health -= bullet.strength
 				if (players[i].health <= 0) {
 					console.log('player '+bullet.userID+' hit AND KILLED player '+players[i].id+'!')
 					io.emit('player killed', {
 						hit: players[i].id,
-						shooter: bullet.userID})
+						shooter: bullet.userID,
+						bullet: bullet.id
+					})
 					players.splice(i, 1)
 					return true
 				} else {
@@ -123,7 +118,9 @@ function checkBulletHit(bullet) {
 							id: players[i].id,
 							health: players[i].health
 						},
-						shooter: bullet.userID})
+						shooter: bullet.userID,
+						bullet: bullet.id
+					})
 					return true
 				}
 			}
@@ -189,7 +186,7 @@ io.on('connection', function(client){
 
 	client.on('add bullet', function(bullet) {
 		if (lookupId(bullet.userID)) {
-			var newBullet = new Bullet(bullet.userID, bullet.pos, bullet.heading, bullet.decay);
+			var newBullet = new Bullet(bullet);
 			bullets.push(newBullet);
 			io.emit('add bullet', newBullet);
 		}
@@ -219,15 +216,6 @@ io.on('connection', function(client){
 		var updateThis = lookupId(data.id);
 		updateThis.pos = data.pos;
 		io.emit('player update', updateThis);
-	}
-  });
-
- // update bullets coordinates
-  client.on('bullet update', function(data) {
-	if(lookupBullet(data.id, data.pos.x, data.pos.y)) {
-		var updateThis = lookupBullet(data.id, data.pos.x, data.pos.y);
-		updateThis.pos = data.pos;
-		io.emit('bullet update', updateThis);
 	}
   });
 

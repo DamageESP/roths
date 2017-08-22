@@ -74,15 +74,17 @@ function Player(id, username, colour, pos, health) {
 	this.shoot = function() {
 		var thisPos = createVector(this.pos.x + (birdSize.x / 2), this.pos.y);
 		var mousePos = createVector(mouseX, mouseY);
-		var heading = mousePos.sub(thisPos).heading();	
-		var newBullet = new Bullet(this.id, this.pos, p5.Vector.fromAngle(heading));
+		var heading = mousePos.sub(thisPos).heading();
+		var newBullet = new Bullet({userID: this.id, pos: this.pos, heading: p5.Vector.fromAngle(heading)});
 		socket.emit('add bullet', {
 			userID: newBullet.userID,
+			id: newBullet.id,
 			pos: {
 				x: newBullet.pos.x,
 				y: newBullet.pos.y
 			},
 			decay: 0,
+			strength: newBullet.strength,
 			heading: {
 				x: newBullet.heading.x,
 				y: newBullet.heading.y
