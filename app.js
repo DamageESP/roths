@@ -29,9 +29,13 @@ function Bullet(data) {
 function Player(data) {
 	this.id = data.id
 	this.username = data.username
-	this.colour = data.colour
-	this.pos = data.pos
-	this.health = data.health
+	this.colour = data.colour || {r: random(0, 255), g: random(0, 255), b: random(0, 255)}
+	this.pos = data.pos || {x: random(0, playArea.x), y: random(0, playArea.y)}
+	this.health = data.health || 100
+}
+
+function random(min, max) {
+  return Math.floor(max - Math.random()*(max-min))
 }
 
 function lookup(username) {
@@ -71,18 +75,19 @@ function flyBullets() {
 	if (bullets.length > 0) {
 		for (var i = 0; i < bullets.length; i++) {
 			if(bullets[i].pos.x > playArea.x || bullets[i].pos.x < 0 || bullets[i].pos.y < 0 || bullets[i].pos.y > playArea.y) {
-				console.log('bullet out')
+				//console.log('bullet out')
+				bullets[i].out = true
 				io.emit('bullet update', bullets[i])
 				bullets.splice(i, 1)
 			} else {
-				
+				bullets[i].strength > 0 ? bullets[i].strength -= .5 : bullets[i].strength = 0
 				bullets[i].decay += .003
 				bullets[i].heading.y += bullets[i].decay
 				bullets[i].pos.x += bullets[i].heading.x
 				bullets[i].pos.y += bullets[i].heading.y
-				console.log('bullet y pos is '+bullets[i].pos.y)
+				//console.log('bullet y pos is '+bullets[i].pos.y)
 				io.emit('bullet update', bullets[i])
-				if (checkBulletHit(bullets[i])) {
+				if (checkBulletHit(bullets[i]) || bullets[i].strength <= 0) {
 					bullets.splice(i, 1)
 				}
 				//console.log('bullet has been displaced to x:'+bullets[i].pos.x+', y:'+bullets[i].pos.y)
@@ -98,8 +103,8 @@ function checkBulletHit(bullet) {
 				console.log('player '+players[i].id+' has been hit by '+bullets[j].userID+' ('+Math.abs(Math.floor(players[i].pos.x) - Math.floor(bullets[j].pos.x))+' < 20 and '+Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y))+' < 14)')
 			}
 			//console.log(Math.abs(Math.floor(players[i].pos.y) - Math.floor(bullets[j].pos.y)))*/
-			if ((Math.abs(players[i].pos.x - bullet.pos.x) < 20 || Math.abs(players[i].pos.x - bullet.pos.x - bullet.heading.x) < 20)
-			&& (Math.abs(players[i].pos.y - bullet.pos.y) < 14  || Math.abs(players[i].pos.y - bullet.pos.y - bullet.heading.y) < 14)
+			if (Math.abs(players[i].pos.x - bullet.pos.x) < 20
+			&& Math.abs(players[i].pos.y - bullet.pos.y) < 14
 			&& players[i].id != bullet.userID) {
 				players[i].health -= bullet.strength
 				if (players[i].health <= 0) {
@@ -116,7 +121,7 @@ function checkBulletHit(bullet) {
 					io.emit('player hit', {
 						hit: {
 							id: players[i].id,
-							health: players[i].health
+							health: Math.ceil(players[i].health)
 						},
 						shooter: bullet.userID,
 						bullet: bullet.id
@@ -170,6 +175,7 @@ io.on('connection', function(client){
 				io.to(client.id).emit('user message', ' user '+ user.username +' already exists');
 					console.log(' '+user.username+" already exists");
 			} else {
+				user.id = client.id
 				var newPlayer = new Player(user);
 				players.push(newPlayer);
 				console.log(user.username+' joined (id: '+client.id+')');

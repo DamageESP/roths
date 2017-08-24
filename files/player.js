@@ -1,17 +1,16 @@
-var initialSize = 80;
-var targetSpeed;
 var birdSize = {
 	x: 40,
 	y: 28
 }
 
-function Player(id, username, colour, pos, health) {
-	this.id = id
-	this.username = username
-	this.colour = colour // contains r, g, b
-	this.pos = createVector(pos.x, pos.y)
+function Player(data) {
+	this.id = data.id
+	this.username = data.username
+	this.colour = data.colour // contains r, g, b
+	this.pos = createVector(data.pos.x, data.pos.y)
 	this.speed = createVector(0, 0)
-	this.health = health
+	this.health = data.health
+	this.kills = data.kills
 	this.display = function() {
 		var clr = color(this.colour.r, this.colour.g, this.colour.b);
 		fill(clr);
@@ -22,6 +21,8 @@ function Player(id, username, colour, pos, health) {
 		var heading = mousePos.sub(this.pos).heading();
 		var x = createVector(this.pos.x, this.pos.y);
 		rotate(heading, x);
+		var scaled = createVector(windowWidth / view.x, windowHeight / view.y)
+		scale(scaled)
 		image(bird, - birdSize.x/2, - birdSize.y/2, birdSize.x, birdSize.y);
 		pop();
 		textAlign(CENTER);
@@ -34,30 +35,30 @@ function Player(id, username, colour, pos, health) {
 		}
 	}
 	this.move = function(dir) {
-		targetSpeed = createVector(0, 0);
+		var targetSpeed = createVector(0, 0);
 		if(dir==='up') {
-			targetSpeed.add(createVector(0, -5));
+			targetSpeed.add(createVector(0, -15));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
 			this.pos = pos;
 		}
 		if(dir==='down') {
-			targetSpeed.add(createVector(0, 5));
+			targetSpeed.add(createVector(0, 15));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
 			this.pos = pos;
 		}
 		if(dir==='left') {
-			targetSpeed.add(createVector(-5, 0));
+			targetSpeed.add(createVector(-15, 0));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
 			this.pos = pos;
 		}
 		if(dir==='right') {
-			targetSpeed.add(createVector(5, 0));
+			targetSpeed.add(createVector(15, 0));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);

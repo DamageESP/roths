@@ -12,7 +12,7 @@ function Bullet(data) {
 	this.id = data.id || guid()
 	this.pos = createVector(data.pos.x, data.pos.y)
 	this.heading = createVector(data.heading.x, data.heading.y)
-	this.heading.mult(4)
+	this.heading.mult(data.range || 16)
 	this.decay = 0
 	this.strength = 40
 	this.out = false

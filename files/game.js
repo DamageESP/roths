@@ -1,8 +1,34 @@
-var initialSize = 20;
+var Console = {
+	setup: function () {
+		var console = document.createElement("div")
+		console.id = "console"
+		console.style.cssText = "width: 500px; height: 100%; background: white; right: 0; top: 0; position: absolute; padding: 25px; display: none;"
+		document.getElementsByTagName("body")[0].appendChild(console)
+	},
+	update: function () {
+		if (document.getElementById("console").style.display == "block")
+		var content = `
+		Your position is: x: ${Math.floor(thisPlayer.pos.x)}, y: ${Math.floor(thisPlayer.pos.y)}
+		Your health is: ${thisPlayer.health} hp
+		`;
+		document.getElementById("console").innerHTML = content
+	},
+	toggle: function () {
+		document.getElementById("console").style.display == "none" ? document.getElementById("console").style.display = "block" : document.getElementById("console").style.display = "none"
+	}
+}
 var socket = io();
 var players = [];
 var bullets = [];
 var thisPlayer;
+var playArea = {
+	x: 2000,
+	y: 2000
+}
+var view = {
+	x: 1280,
+	y: 720
+}
 var canvas;
 var bird;
 var bg;
@@ -15,40 +41,19 @@ function preload() {
 }
 
 function setup() {
-	canvas = createCanvas(windowWidth, windowHeight);
-	socket.connect('http://localhost:3000');
-	socket.emit('fetch data');
+	canvas = createCanvas(windowWidth, windowHeight)
+	socket.connect('http://localhost:3000')
+	socket.emit('fetch data')
+
+	Console.setup()
 
 	// Login as player
 	$("#username").keypress(function(e) {
 		if(e.which == 13) {
 			var username = $(this).val();
 			if(username.length > 0) {
-				var r = random(0,255);
-				var g = random(0,255);
-				var b = random(0,255);
-				var x = random(0, windowWidth);
-				var y = random(0, windowHeight);
-				var pos = {
-					x: x,
-					y: y
-				};
-				var colour = {
-					r: r,
-					g: g,
-					b: b
-				};
-				var health = 100
-				var newPlayer = new Player(socket.id, username, colour, pos, health)
 				socket.emit('add user', {
-					id: newPlayer.id,
-					username: newPlayer.username,
-					colour: newPlayer.colour,
-					pos: {
-						x: newPlayer.pos.x,
-						y: newPlayer.pos.y
-					},
-					health: newPlayer.health
+					username: username
 				});
 				return false;
 			}
@@ -79,6 +84,7 @@ function draw() {
 	// Player movement
 
 	if(thisPlayer) {
+		Console.update()
 		if(!$("#chat input").is(":focus")) {
 			if(keyIsDown(UP_ARROW) || keyIsDown(87)) {
 				thisPlayer.move("up");
@@ -109,6 +115,7 @@ function draw() {
 
 	// bullets update
 	for (var i = 0; i < bullets.length; i++) {
+		//console.log(bullets.length)
 		if(bullets[i].out) {
 			bullets.splice(i, 1);
 		} else {
@@ -116,6 +123,15 @@ function draw() {
 		}
 	}
 }
+
+// KEY BINDINGS
+$(document).on('keypress', e => {
+	if (e.key == "c") {
+		//console.log('toggling console')
+		Console.toggle()
+	}
+})
+
 
 function shoot() {
 	if(thisPlayer) {
@@ -174,7 +190,7 @@ socket.on('fetch data', function(data) {
 	players = [];
 	bullets = [];
 	for(var i = 0; i < data.players.length; i++) {
-		var pushPlayer = new Player(data.players[i].id, data.players[i].username, data.players[i].colour, data.players[i].pos, data.players[i].health);
+		var pushPlayer = new Player(data.players[i]);
 		players.push(pushPlayer);
 	}
 	if(data.bullets) {
@@ -190,6 +206,7 @@ socket.on('fetch data', function(data) {
 		$("#events").hide();
 		$("#chat").hide();
 		$("#login").show();
+		$("#username").focus();
 	}
 });
 
@@ -220,18 +237,18 @@ socket.on('bullet update', function(bullet) {
 	if(lookupBullet(bullet.id)) {
 		//console.log('found bullet with id '+bullet.id)
 		var updateThis = lookupBullet(bullet.id);
-		updateThis.pos = bullet.pos;
+		bullet.out || bullet.strength <= 0 ? updateThis.out = true : updateThis.pos = bullet.pos
 	}
 });
 
 socket.on('add user', function(user) {
-	var pushPlayer = new Player(user.id, user.username, user.colour, user.pos, user.health);
-	players.push(pushPlayer);
-	if(lookupId(socket.id)) {
-		thisPlayer = lookupId(socket.id);
-		$("#events").show();
-		$("#chat").show();
-		$("#login").hide();
+	var pushPlayer = new Player(user)
+	players.push(pushPlayer)
+	if(pushPlayer.id == socket.id) {
+		thisPlayer = pushPlayer
+		$("#events").show()
+		$("#chat").show()
+		$("#login").hide()
 	}
 });
 
