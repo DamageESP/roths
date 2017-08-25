@@ -19,8 +19,7 @@ function Player(data) {
 		translate(this.pos.x, this.pos.y);
 		var mousePos = createVector(mouseX, mouseY);
 		var heading = mousePos.sub(this.pos).heading();
-		var x = createVector(this.pos.x, this.pos.y);
-		rotate(heading, x);
+		rotate(heading, this.pos);
 		var scaled = createVector(windowWidth / view.x, windowHeight / view.y)
 		scale(scaled)
 		image(bird, - birdSize.x/2, - birdSize.y/2, birdSize.x, birdSize.y);
@@ -41,35 +40,35 @@ function Player(data) {
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
-			this.pos = pos;
+			if (playArea.x[0] < pos.x < playArea.x[1] && playArea.y[0] < pos.y < playArea.y[1]) this.pos = pos
 		}
 		if(dir==='down') {
 			targetSpeed.add(createVector(0, 15));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
-			this.pos = pos;
+			if (playArea.x[0] < pos.x < playArea.x[1] && playArea.y[0] < pos.y < playArea.y[1]) this.pos = pos
 		}
 		if(dir==='left') {
 			targetSpeed.add(createVector(-15, 0));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
-			this.pos = pos;
+			if (playArea.x[0] < pos.x < playArea.x[1] && playArea.y[0] < pos.y < playArea.y[1]) this.pos = pos
 		}
 		if(dir==='right') {
 			targetSpeed.add(createVector(15, 0));
 			this.speed.lerp(targetSpeed, .02);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
-			this.pos = pos;
+			if (playArea.x[0] < pos.x < playArea.x[1] && playArea.y[0] < pos.y < playArea.y[1]) this.pos = pos
 		}
 		if(!dir) {
 			targetSpeed.add(createVector(0, 0));
 			this.speed.lerp(targetSpeed, .05);
 			var pos = createVector(this.pos.x, this.pos.y);
 			pos.add(this.speed);
-			this.pos = pos;
+			if (playArea.x[0] < pos.x < playArea.x[1] && playArea.y[0] < pos.y < playArea.y[1]) this.pos = pos
 		}
 	}
 	this.shoot = function() {

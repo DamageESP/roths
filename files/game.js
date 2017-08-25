@@ -15,6 +15,19 @@ var Console = {
 	},
 	toggle: function () {
 		document.getElementById("console").style.display == "none" ? document.getElementById("console").style.display = "block" : document.getElementById("console").style.display = "none"
+	},
+	command: function (command) {
+		var type = command.split("\"")[0].trim()
+		var data = command.split("\"")[1]
+		switch (type) {
+			case "/tp":
+				thisPlayer.pos.x = Number(data.split(",")[0].replace(/[^0-9]/g, '')) || 0
+				thisPlayer.pos.y = Number(data.split(",")[1].replace(/[^0-9]/g, '')) || 0
+				break;
+			case "/name":
+				thisPlayer.username = data
+				break;
+		}
 	}
 }
 var socket = io();
@@ -22,8 +35,8 @@ var players = [];
 var bullets = [];
 var thisPlayer;
 var playArea = {
-	x: 2000,
-	y: 2000
+	x: [0, 2000],
+	y: [0, 2000]
 }
 var view = {
 	x: 1280,
@@ -84,7 +97,31 @@ function draw() {
 	// Player movement
 
 	if(thisPlayer) {
+		var x = 0
+		var y = 0
 		Console.update()
+		/*if (thisPlayer.pos.y - height / 2 > playArea.y[0] && thisPlayer.pos.y + height / 2 < playArea.y[1] && thisPlayer.pos.x - width / 2 > playArea.x[0] && thisPlayer.pos.x + width / 2 < playArea.x[1]) {
+			x = - thisPlayer.pos.x + width / 2
+			y = - thisPlayer.pos.y + height / 2
+		}*/
+		if (thisPlayer.pos.y - height / 2 > playArea.y[0]) {
+			//console.log(1)
+			y = - thisPlayer.pos.y + height / 2
+		}
+		if (thisPlayer.pos.x - width / 2 > playArea.x[0]) {
+			//console.log(2)
+			x = - thisPlayer.pos.x + width / 2
+		}
+		if (thisPlayer.pos.y + height / 2 >= playArea.y[1]) {
+			//console.log(3)
+			y = - playArea.y[1] + height
+		}
+		if (thisPlayer.pos.x + width / 2 >= playArea.x[1]) {
+			//console.log(4)
+			x = - playArea.x[1] + width
+		}
+		//console.log("translating to x:"+x+", y:"+y)
+		translate(x, y)
 		if(!$("#chat input").is(":focus")) {
 			if(keyIsDown(UP_ARROW) || keyIsDown(87)) {
 				thisPlayer.move("up");
@@ -221,8 +258,12 @@ socket.on('user message', function(msg) {
 });
 
 socket.on('say', function(msg) {
-	$("#events").append($("<li style=\"color:black\">").html('<strong style=\'color: '+msg.colour+'\'>'+msg.user+'</strong>: '+msg.data));
-	add();
+	if (msg.data.charAt(0) == "/" && msg.user == thisPlayer.username) {
+		Console.command(msg.data)
+	} else {
+		$("#events").append($("<li style=\"color:black\">").html('<strong style=\'color: '+msg.colour+'\'>'+msg.user+'</strong>: '+msg.data));
+		add();
+	}
 });
 
 socket.on('player update', function(player) {

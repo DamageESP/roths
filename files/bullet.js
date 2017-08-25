@@ -17,7 +17,7 @@ function Bullet(data) {
 	this.strength = 40
 	this.out = false
 	this.display = function() {
-		if(this.pos.x > width || this.pos.x < 0 || this.pos.y < 0 || this.pos.y > height) {
+		if(this.pos.x > playArea.x[1] || this.pos.x < playArea.x[0] || this.pos.y < playArea.y[0] || this.pos.y > playArea.y[1]) {
 			this.out = true
 		} else {
 			push()
